@@ -7,6 +7,9 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.util.Map;
+import java.util.HashMap;
+
 
 
 /**
@@ -15,13 +18,38 @@ import java.awt.event.WindowEvent;
  * Следует разделить его на серию более простых методов (или вообще выделить отдельный класс).
  *
  */
-public class MainApplicationFrame extends JFrame
+public class MainApplicationFrame extends JFrame implements WindowState
 {
+
     private final JDesktopPane desktopPane = new JDesktopPane();
 
     public MainApplicationFrame() {
         //Make the big window be indented 50 pixels from each edge
         //of the screen.
+        // Load saved state
+        StateManager sm = new StateManager("geordane");
+        Map<String, String> global = sm.load();
+
+// Extract only main window state
+        Map<String, String> mainState = new HashMap<>();
+        for (var e : global.entrySet()) {
+            if (e.getKey().startsWith("main.")) {
+                mainState.put(e.getKey().substring(5), e.getValue());
+            }
+        }
+
+// Apply state if available
+        if (!mainState.isEmpty()) {
+            loadState(mainState);
+        } else {
+            // Default position if no saved state
+            int inset = 50;
+            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
+            setBounds(inset, inset,
+                    screenSize.width - inset * 2,
+                    screenSize.height - inset * 2);
+        }
+
         int inset = 50;
         Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
         setBounds(inset, inset,
@@ -140,11 +168,48 @@ public class MainApplicationFrame extends JFrame
         );
 
         if (result == JOptionPane.YES_OPTION) {
+            saveAllStates();
             dispose(); // close it
         } else {
             // nothing if "Нет"
         }
 
     }
+    private void saveAllStates() {
+        StateManager sm = new StateManager("geordane"); // ton dossier perso
+        Map<String, String> global = new HashMap<>();
+
+        // Save main window state
+        Map<String, String> mainState = saveState();
+        mainState.forEach((k, v) -> global.put("main." + k, v));
+
+        sm.save(global);
+    }
+
+    @Override
+    public Map<String, String> saveState() {
+        Map<String, String> map = new HashMap<>();
+        map.put("x", String.valueOf(getX()));
+        map.put("y", String.valueOf(getY()));
+        map.put("width", String.valueOf(getWidth()));
+        map.put("height", String.valueOf(getHeight()));
+        map.put("state", String.valueOf(getExtendedState()));
+        return map;
+    }
+
+    @Override
+    public void loadState(Map<String, String> state) {
+        try {
+            int x = Integer.parseInt(state.get("x"));
+            int y = Integer.parseInt(state.get("y"));
+            int w = Integer.parseInt(state.get("width"));
+            int h = Integer.parseInt(state.get("height"));
+            int st = Integer.parseInt(state.get("state"));
+
+            setBounds(x, y, w, h);
+            setExtendedState(st);
+        } catch (Exception ignored) {}
+    }
+
 
 }
