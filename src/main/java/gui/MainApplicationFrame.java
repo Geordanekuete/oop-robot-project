@@ -5,6 +5,9 @@ import log.Logger;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
+
 
 /**
  * Что требуется сделать:
@@ -36,8 +39,16 @@ public class MainApplicationFrame extends JFrame
         addWindow(gameWindow);
 
         setJMenuBar(generateMenuBar());
-        setDefaultCloseOperation(EXIT_ON_CLOSE);
+        setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
+        addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                onExit();
+            }
+        });
+
     }
+
 
     protected LogWindow createLogWindow()
     {
@@ -92,8 +103,17 @@ public class MainApplicationFrame extends JFrame
 
         menuBar.add(lookAndFeelMenu);
         menuBar.add(testMenu);
+        menuBar.add(createExitMenu());
         return menuBar;
     }
+    private JMenu createExitMenu() {
+        JMenu fileMenu = new JMenu("Файл");
+        JMenuItem exitItem = new JMenuItem("Выход");
+        exitItem.addActionListener(e -> onExit());
+        fileMenu.add(exitItem);
+        return fileMenu;
+    }
+
 
     private void setLookAndFeel(String className)
     {
@@ -108,4 +128,23 @@ public class MainApplicationFrame extends JFrame
             // just ignore
         }
     }
+    private void onExit() {
+        UIManager.put("OptionPane.yesButtonText", "Да");
+        UIManager.put("OptionPane.noButtonText", "Нет");
+
+        int result = JOptionPane.showConfirmDialog(
+                this,
+                "Вы действительно хотите выйти?",
+                "Подтверждение выхода",
+                JOptionPane.YES_NO_OPTION
+        );
+
+        if (result == JOptionPane.YES_OPTION) {
+            dispose(); // close it
+        } else {
+            // nothing if "Нет"
+        }
+
+    }
+
 }
