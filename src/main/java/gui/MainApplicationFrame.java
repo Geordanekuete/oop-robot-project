@@ -171,6 +171,7 @@ public class MainApplicationFrame extends JFrame implements WindowState
             saveAllStates();
             dispose();
             System.exit(0); // close it
+            //test
         } else {
             // nothing if "Нет"
         }
