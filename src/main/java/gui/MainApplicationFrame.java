@@ -169,7 +169,8 @@ public class MainApplicationFrame extends JFrame implements WindowState
 
         if (result == JOptionPane.YES_OPTION) {
             saveAllStates();
-            dispose(); // close it
+            dispose();
+            System.exit(0); // close it
         } else {
             // nothing if "Нет"
         }
