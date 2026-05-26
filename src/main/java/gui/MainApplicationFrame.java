@@ -4,60 +4,42 @@ import log.Logger;
 
 import javax.swing.*;
 import java.awt.*;
-import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+import java.awt.event.*;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Main application window.
- * Task 1 requirements:
- * - Split the menu creation into smaller methods.
- * - Add a menu item to exit the application.
- * - Centralize exit logic in one method with confirmation dialog.
+ * Task 1: menu refactoring + exit logic.
+ * Task 2: saving and restoring all window states.
  */
 public class MainApplicationFrame extends JFrame implements WindowState {
 
     private final JDesktopPane desktopPane = new JDesktopPane();
 
+    private LogWindow logWindow;
+    private GameWindow gameWindow;
+
     public MainApplicationFrame() {
 
-        // Load saved state for main window
         StateManager sm = new StateManager("geordane");
         Map<String, String> global = sm.load();
 
-        Map<String, String> mainState = new HashMap<>();
-        for (var e : global.entrySet()) {
-            if (e.getKey().startsWith("main.")) {
-                mainState.put(e.getKey().substring(5), e.getValue());
-            }
-        }
-
-        if (!mainState.isEmpty()) {
-            loadState(mainState);
-        } else {
-            int inset = 50;
-            Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-            setBounds(inset, inset,
-                    screenSize.width - inset * 2,
-                    screenSize.height - inset * 2);
-        }
+        loadState(extract(global, "main."));
 
         setContentPane(desktopPane);
 
-        // Internal windows
-        LogWindow logWindow = createLogWindow();
-        addWindow(logWindow);
+        logWindow = new LogWindow(Logger.getDefaultLogSource());
+        gameWindow = new GameWindow();
 
-        GameWindow gameWindow = new GameWindow();
-        gameWindow.setSize(400, 400);
+        addWindow(logWindow);
         addWindow(gameWindow);
 
-        // Menu
+        logWindow.loadState(extract(global, "log."));
+        gameWindow.loadState(extract(global, "game."));
+
         setJMenuBar(createMenuBar());
 
-        // Exit handling
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
@@ -67,30 +49,21 @@ public class MainApplicationFrame extends JFrame implements WindowState {
         });
     }
 
-    /**
-     * Creates and configures the log window.
-     */
-    protected LogWindow createLogWindow() {
-        LogWindow logWindow = new LogWindow(Logger.getDefaultLogSource());
-        logWindow.setLocation(10, 10);
-        logWindow.setSize(300, 800);
-        setMinimumSize(logWindow.getSize());
-        logWindow.pack();
-        Logger.debug("Протокол работает");
-        return logWindow;
+    private Map<String, String> extract(Map<String, String> global, String prefix) {
+        Map<String, String> out = new HashMap<>();
+        global.forEach((k, v) -> {
+            if (k.startsWith(prefix)) {
+                out.put(k.substring(prefix.length()), v);
+            }
+        });
+        return out;
     }
 
-    /**
-     * Adds an internal window to the desktop pane.
-     */
     protected void addWindow(JInternalFrame frame) {
         desktopPane.add(frame);
         frame.setVisible(true);
     }
 
-    /**
-     * Builds the main menu bar by delegating to smaller methods.
-     */
     private JMenuBar createMenuBar() {
         JMenuBar bar = new JMenuBar();
         bar.add(createLookAndFeelMenu());
@@ -99,32 +72,20 @@ public class MainApplicationFrame extends JFrame implements WindowState {
         return bar;
     }
 
-    /**
-     * Creates the "Look and Feel" menu.
-     */
     private JMenu createLookAndFeelMenu() {
         JMenu menu = new JMenu("Режим отображения");
 
-        JMenuItem system = new JMenuItem("Системная схема", KeyEvent.VK_S);
-        system.addActionListener(e -> {
-            setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
-            this.invalidate();
-        });
+        JMenuItem system = new JMenuItem("Системная схема");
+        system.addActionListener(e -> setLookAndFeel(UIManager.getSystemLookAndFeelClassName()));
 
-        JMenuItem cross = new JMenuItem("Универсальная схема", KeyEvent.VK_U);
-        cross.addActionListener(e -> {
-            setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
-            this.invalidate();
-        });
+        JMenuItem cross = new JMenuItem("Универсальная схема");
+        cross.addActionListener(e -> setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName()));
 
         menu.add(system);
         menu.add(cross);
         return menu;
     }
 
-    /**
-     * Creates the "Tests" menu.
-     */
     private JMenu createTestMenu() {
         JMenu menu = new JMenu("Тесты");
 
@@ -135,22 +96,16 @@ public class MainApplicationFrame extends JFrame implements WindowState {
         return menu;
     }
 
-    /**
-     * Creates the "File" menu with an exit option.
-     */
     private JMenu createExitMenu() {
-        JMenu fileMenu = new JMenu("Файл");
+        JMenu menu = new JMenu("Файл");
 
-        JMenuItem exitItem = new JMenuItem("Выход");
-        exitItem.addActionListener(e -> onExit());
+        JMenuItem exit = new JMenuItem("Выход");
+        exit.addActionListener(e -> onExit());
 
-        fileMenu.add(exitItem);
-        return fileMenu;
+        menu.add(exit);
+        return menu;
     }
 
-    /**
-     * Applies the selected Look and Feel.
-     */
     private void setLookAndFeel(String className) {
         try {
             UIManager.setLookAndFeel(className);
@@ -158,9 +113,6 @@ public class MainApplicationFrame extends JFrame implements WindowState {
         } catch (Exception ignored) {}
     }
 
-    /**
-     * Centralized exit logic with confirmation dialog.
-     */
     private void onExit() {
         UIManager.put("OptionPane.yesButtonText", "Да");
         UIManager.put("OptionPane.noButtonText", "Нет");
@@ -179,41 +131,42 @@ public class MainApplicationFrame extends JFrame implements WindowState {
         }
     }
 
-    /**
-     * Saves only the main window state (Task 2 not completed here).
-     */
     private void saveAllStates() {
         StateManager sm = new StateManager("geordane");
         Map<String, String> global = new HashMap<>();
 
-        Map<String, String> mainState = saveState();
-        mainState.forEach((k, v) -> global.put("main." + k, v));
+        saveState().forEach((k, v) -> global.put("main." + k, v));
+        logWindow.saveState().forEach((k, v) -> global.put("log." + k, v));
+        gameWindow.saveState().forEach((k, v) -> global.put("game." + k, v));
 
         sm.save(global);
     }
 
     @Override
     public Map<String, String> saveState() {
-        Map<String, String> map = new HashMap<>();
-        map.put("x", String.valueOf(getX()));
-        map.put("y", String.valueOf(getY()));
-        map.put("width", String.valueOf(getWidth()));
-        map.put("height", String.valueOf(getHeight()));
-        map.put("state", String.valueOf(getExtendedState()));
-        return map;
+        Map<String, String> m = new HashMap<>();
+        m.put("x", "" + getX());
+        m.put("y", "" + getY());
+        m.put("width", "" + getWidth());
+        m.put("height", "" + getHeight());
+        m.put("state", "" + getExtendedState());
+        return m;
     }
 
     @Override
-    public void loadState(Map<String, String> state) {
+    public void loadState(Map<String, String> s) {
         try {
-            int x = Integer.parseInt(state.get("x"));
-            int y = Integer.parseInt(state.get("y"));
-            int w = Integer.parseInt(state.get("width"));
-            int h = Integer.parseInt(state.get("height"));
-            int st = Integer.parseInt(state.get("state"));
+            setBounds(
+                    Integer.parseInt(s.get("x")),
+                    Integer.parseInt(s.get("y")),
+                    Integer.parseInt(s.get("width")),
+                    Integer.parseInt(s.get("height"))
+            );
 
-            setBounds(x, y, w, h);
-            setExtendedState(st);
+            if (s.containsKey("state")) {
+                setExtendedState(Integer.parseInt(s.get("state")));
+            }
+
         } catch (Exception ignored) {}
     }
 }
