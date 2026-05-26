@@ -10,8 +10,6 @@ import java.util.Map;
 
 /**
  * Main application window.
- * Task 1: menu refactoring + exit logic.
- * Task 2: saving and restoring all window states.
  */
 public class MainApplicationFrame extends JFrame implements WindowState {
 
@@ -19,7 +17,10 @@ public class MainApplicationFrame extends JFrame implements WindowState {
 
     private LogWindow logWindow;
     private GameWindow gameWindow;
-    private StateManager sm = new StateManager("geordane");
+    /**
+     * Window state manager
+     */
+    private StateManager sm = new StateManager();
     public MainApplicationFrame() {
 
 
@@ -49,6 +50,10 @@ public class MainApplicationFrame extends JFrame implements WindowState {
         });
     }
 
+    /**
+     * Extract
+     *
+     */
     private Map<String, String> extract(Map<String, String> global, String prefix) {
         Map<String, String> out = new HashMap<>();
         global.forEach((k, v) -> {
@@ -64,6 +69,9 @@ public class MainApplicationFrame extends JFrame implements WindowState {
         frame.setVisible(true);
     }
 
+    /**
+     * It Creates a menu bar
+     */
     private JMenuBar createMenuBar() {
         JMenuBar bar = new JMenuBar();
         bar.add(createLookAndFeelMenu());
@@ -72,6 +80,10 @@ public class MainApplicationFrame extends JFrame implements WindowState {
         return bar;
     }
 
+    /**
+     * Creates the menu and his items
+     * implements the default look and feel
+     */
     private JMenu createLookAndFeelMenu() {
         JMenu menu = new JMenu("Режим отображения");
 
@@ -86,6 +98,11 @@ public class MainApplicationFrame extends JFrame implements WindowState {
         return menu;
     }
 
+    /**
+     * creates the test menu items.
+     *
+     */
+
     private JMenu createTestMenu() {
         JMenu menu = new JMenu("Тесты");
 
@@ -96,6 +113,9 @@ public class MainApplicationFrame extends JFrame implements WindowState {
         return menu;
     }
 
+    /**
+     * Creates the menu with exit button
+     */
     private JMenu createExitMenu() {
         JMenu menu = new JMenu("Файл");
 
@@ -113,6 +133,10 @@ public class MainApplicationFrame extends JFrame implements WindowState {
         } catch (Exception ignored) {}
     }
 
+    /**
+     * Show a pop-up with exit options
+     * Ask for confirmation to exit
+     */
     private void onExit() {
         UIManager.put("OptionPane.yesButtonText", "Да");
         UIManager.put("OptionPane.noButtonText", "Нет");
@@ -131,6 +155,9 @@ public class MainApplicationFrame extends JFrame implements WindowState {
         }
     }
 
+    /**
+     * Saves all windows states
+     */
     private void saveAllStates() {
 
         Map<String, String> global = new HashMap<>();

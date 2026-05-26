@@ -9,9 +9,7 @@ import java.awt.*;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * Log window with state saving support (Task 2).
- */
+
 public class LogWindow extends JInternalFrame implements LogChangeListener, WindowState {
 
     private final LogWindowSource logSource;
@@ -49,7 +47,7 @@ public class LogWindow extends JInternalFrame implements LogChangeListener, Wind
     }
 
 
-    //  TASK 2 : WindowState
+    // WindowState
 
 
     @Override
