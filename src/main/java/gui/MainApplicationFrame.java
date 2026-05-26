@@ -7,30 +7,26 @@ import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.util.Map;
 import java.util.HashMap;
-
-
+import java.util.Map;
 
 /**
- * Что требуется сделать:
- * 1. Метод создания меню перегружен функционалом и трудно читается.
- * Следует разделить его на серию более простых методов (или вообще выделить отдельный класс).
- *
+ * Main application window.
+ * Task 1 requirements:
+ * - Split the menu creation into smaller methods.
+ * - Add a menu item to exit the application.
+ * - Centralize exit logic in one method with confirmation dialog.
  */
-public class MainApplicationFrame extends JFrame implements WindowState
-{
+public class MainApplicationFrame extends JFrame implements WindowState {
 
     private final JDesktopPane desktopPane = new JDesktopPane();
 
     public MainApplicationFrame() {
-        //Make the big window be indented 50 pixels from each edge
-        //of the screen.
-        // Load saved state
+
+        // Load saved state for main window
         StateManager sm = new StateManager("geordane");
         Map<String, String> global = sm.load();
 
-// Extract only main window state
         Map<String, String> mainState = new HashMap<>();
         for (var e : global.entrySet()) {
             if (e.getKey().startsWith("main.")) {
@@ -38,11 +34,9 @@ public class MainApplicationFrame extends JFrame implements WindowState
             }
         }
 
-// Apply state if available
         if (!mainState.isEmpty()) {
             loadState(mainState);
         } else {
-            // Default position if no saved state
             int inset = 50;
             Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
             setBounds(inset, inset,
@@ -50,23 +44,20 @@ public class MainApplicationFrame extends JFrame implements WindowState
                     screenSize.height - inset * 2);
         }
 
-        int inset = 50;
-        Dimension screenSize = Toolkit.getDefaultToolkit().getScreenSize();
-        setBounds(inset, inset,
-                screenSize.width  - inset*2,
-                screenSize.height - inset*2);
-
         setContentPane(desktopPane);
 
-
+        // Internal windows
         LogWindow logWindow = createLogWindow();
         addWindow(logWindow);
 
         GameWindow gameWindow = new GameWindow();
-        gameWindow.setSize(400,  400);
+        gameWindow.setSize(400, 400);
         addWindow(gameWindow);
 
-        setJMenuBar(generateMenuBar());
+        // Menu
+        setJMenuBar(createMenuBar());
+
+        // Exit handling
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         addWindowListener(new WindowAdapter() {
             @Override
@@ -74,14 +65,14 @@ public class MainApplicationFrame extends JFrame implements WindowState
                 onExit();
             }
         });
-
     }
 
-
-    protected LogWindow createLogWindow()
-    {
+    /**
+     * Creates and configures the log window.
+     */
+    protected LogWindow createLogWindow() {
         LogWindow logWindow = new LogWindow(Logger.getDefaultLogSource());
-        logWindow.setLocation(10,10);
+        logWindow.setLocation(10, 10);
         logWindow.setSize(300, 800);
         setMinimumSize(logWindow.getSize());
         logWindow.pack();
@@ -89,73 +80,87 @@ public class MainApplicationFrame extends JFrame implements WindowState
         return logWindow;
     }
 
-    protected void addWindow(JInternalFrame frame)
-    {
+    /**
+     * Adds an internal window to the desktop pane.
+     */
+    protected void addWindow(JInternalFrame frame) {
         desktopPane.add(frame);
         frame.setVisible(true);
     }
 
-    private JMenuBar generateMenuBar()
-    {
-        JMenuBar menuBar = new JMenuBar();
+    /**
+     * Builds the main menu bar by delegating to smaller methods.
+     */
+    private JMenuBar createMenuBar() {
+        JMenuBar bar = new JMenuBar();
+        bar.add(createLookAndFeelMenu());
+        bar.add(createTestMenu());
+        bar.add(createExitMenu());
+        return bar;
+    }
 
-        JMenu lookAndFeelMenu = new JMenu("Режим отображения");
-        lookAndFeelMenu.setMnemonic(KeyEvent.VK_V);
-        lookAndFeelMenu.getAccessibleContext().setAccessibleDescription(
-                "Управление режимом отображения приложения");
+    /**
+     * Creates the "Look and Feel" menu.
+     */
+    private JMenu createLookAndFeelMenu() {
+        JMenu menu = new JMenu("Режим отображения");
 
-        JMenuItem systemLookAndFeel = new JMenuItem("Системная схема", KeyEvent.VK_S);
-        systemLookAndFeel.addActionListener((event) -> {
+        JMenuItem system = new JMenuItem("Системная схема", KeyEvent.VK_S);
+        system.addActionListener(e -> {
             setLookAndFeel(UIManager.getSystemLookAndFeelClassName());
             this.invalidate();
         });
-        lookAndFeelMenu.add(systemLookAndFeel);
 
-        JMenuItem crossplatformLookAndFeel = new JMenuItem("Универсальная схема", KeyEvent.VK_S);
-        crossplatformLookAndFeel.addActionListener((event) -> {
+        JMenuItem cross = new JMenuItem("Универсальная схема", KeyEvent.VK_U);
+        cross.addActionListener(e -> {
             setLookAndFeel(UIManager.getCrossPlatformLookAndFeelClassName());
             this.invalidate();
         });
-        lookAndFeelMenu.add(crossplatformLookAndFeel);
 
-        JMenu testMenu = new JMenu("Тесты");
-        testMenu.setMnemonic(KeyEvent.VK_T);
-        testMenu.getAccessibleContext().setAccessibleDescription(
-                "Тестовые команды");
-
-        JMenuItem addLogMessageItem = new JMenuItem("Сообщение в лог", KeyEvent.VK_S);
-        addLogMessageItem.addActionListener((event) -> {
-            Logger.debug("Новая строка");
-        });
-        testMenu.add(addLogMessageItem);
-
-        menuBar.add(lookAndFeelMenu);
-        menuBar.add(testMenu);
-        menuBar.add(createExitMenu());
-        return menuBar;
+        menu.add(system);
+        menu.add(cross);
+        return menu;
     }
+
+    /**
+     * Creates the "Tests" menu.
+     */
+    private JMenu createTestMenu() {
+        JMenu menu = new JMenu("Тесты");
+
+        JMenuItem addLog = new JMenuItem("Сообщение в лог");
+        addLog.addActionListener(e -> Logger.debug("Новая строка"));
+
+        menu.add(addLog);
+        return menu;
+    }
+
+    /**
+     * Creates the "File" menu with an exit option.
+     */
     private JMenu createExitMenu() {
         JMenu fileMenu = new JMenu("Файл");
+
         JMenuItem exitItem = new JMenuItem("Выход");
         exitItem.addActionListener(e -> onExit());
+
         fileMenu.add(exitItem);
         return fileMenu;
     }
 
-
-    private void setLookAndFeel(String className)
-    {
-        try
-        {
+    /**
+     * Applies the selected Look and Feel.
+     */
+    private void setLookAndFeel(String className) {
+        try {
             UIManager.setLookAndFeel(className);
             SwingUtilities.updateComponentTreeUI(this);
-        }
-        catch (ClassNotFoundException | InstantiationException
-               | IllegalAccessException | UnsupportedLookAndFeelException e)
-        {
-            // just ignore
-        }
+        } catch (Exception ignored) {}
     }
+
+    /**
+     * Centralized exit logic with confirmation dialog.
+     */
     private void onExit() {
         UIManager.put("OptionPane.yesButtonText", "Да");
         UIManager.put("OptionPane.noButtonText", "Нет");
@@ -170,18 +175,17 @@ public class MainApplicationFrame extends JFrame implements WindowState
         if (result == JOptionPane.YES_OPTION) {
             saveAllStates();
             dispose();
-            System.exit(0); // close it
-            //test
-        } else {
-            // nothing if "Нет"
+            System.exit(0);
         }
-
     }
+
+    /**
+     * Saves only the main window state (Task 2 not completed here).
+     */
     private void saveAllStates() {
-        StateManager sm = new StateManager("geordane"); // ton dossier perso
+        StateManager sm = new StateManager("geordane");
         Map<String, String> global = new HashMap<>();
 
-        // Save main window state
         Map<String, String> mainState = saveState();
         mainState.forEach((k, v) -> global.put("main." + k, v));
 
@@ -212,6 +216,4 @@ public class MainApplicationFrame extends JFrame implements WindowState
             setExtendedState(st);
         } catch (Exception ignored) {}
     }
-
-
 }
