@@ -3,7 +3,11 @@ package gui;
 import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
-
+/** State Manager
+ * TASK2: Save and Restore Windows
+ * Updating the StateManager class
+ * clean architecture to make it easy to implement in other windows
+ * */
 public class StateManager {
 
     private final File file;

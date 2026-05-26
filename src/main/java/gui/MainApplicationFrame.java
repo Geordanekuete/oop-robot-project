@@ -19,10 +19,10 @@ public class MainApplicationFrame extends JFrame implements WindowState {
 
     private LogWindow logWindow;
     private GameWindow gameWindow;
-
+    private StateManager sm = new StateManager("geordane");
     public MainApplicationFrame() {
 
-        StateManager sm = new StateManager("geordane");
+
         Map<String, String> global = sm.load();
 
         loadState(extract(global, "main."));
@@ -132,7 +132,7 @@ public class MainApplicationFrame extends JFrame implements WindowState {
     }
 
     private void saveAllStates() {
-        StateManager sm = new StateManager("geordane");
+
         Map<String, String> global = new HashMap<>();
 
         saveState().forEach((k, v) -> global.put("main." + k, v));

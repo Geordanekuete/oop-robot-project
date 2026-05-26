@@ -48,9 +48,9 @@ public class LogWindow extends JInternalFrame implements LogChangeListener, Wind
         EventQueue.invokeLater(this::updateLogContent);
     }
 
-    // -------------------------
+
     //  TASK 2 : WindowState
-    // -------------------------
+
 
     @Override
     public Map<String, String> saveState() {
